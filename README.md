@@ -5,8 +5,9 @@ About
 
 Terraform provider for the Onix CMDB 
 
+https://github.com/gatblau/onix 
 
-
+OnixProvider aims to make it possible to both define Onix layouts and add items dynamically from within Terrafrom.
 
 
 Terraform resources
@@ -18,4 +19,10 @@ Terraform resources
       name        = "AWS VPC"
       description = "AWS VPC"
     }
+
+
+Terraform Links
+===============
+
+* https://www.terraform.io/docs/extend/writing-custom-providers.html
 
