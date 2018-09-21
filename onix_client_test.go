@@ -7,7 +7,6 @@ import (
 	"testing"
 )
 
-
 //	TODO - This is not a 'proper' test file. I used this to speed up development against the onix client
 
 func TestOnixClient_Put(t *testing.T) {
@@ -62,6 +61,10 @@ func TestOnixClient_GetItemType(t *testing.T) {
 
 	if resp.Name != "TestT" {
 		t.Errorf("Did not find TestT in itemtype response.")
+	}
+
+	if resp.Id == 0 {
+		t.Errorf("Got ID 0 for saved object")
 	}
 
 	TestOnixClient_Delete(t)

@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/hashicorp/terraform/helper/schema"
+	"strconv"
 )
 
 // TODO - Look at getting the conn from meta (like the AWS provider)
-var oc = OnixClient{ BaseURL: "http://localhost:8080"}
+var oc = OnixClient{BaseURL: "http://localhost:8080"}
 
 func resourceItemType() *schema.Resource {
 	return &schema.Resource{
@@ -21,6 +22,7 @@ func resourceItemType() *schema.Resource {
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"description": &schema.Schema{
 				Type:     schema.TypeString,
@@ -33,9 +35,6 @@ func resourceItemType() *schema.Resource {
 func resourceItemTypeCreate(d *schema.ResourceData, m interface{}) error {
 	name := d.Get("name").(string)
 	description := d.Get("description").(string)
-	d.Set("name", name)
-	d.Set("description", description)
-
 	payload, err := json.Marshal(OnixItemType{
 		Name:        name,
 		Description: description,
@@ -44,33 +43,75 @@ func resourceItemTypeCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	_ , err = oc.Put("itemtype", name, bytes.NewReader(payload))
+	_, err = oc.Put("itemtype", name, bytes.NewReader(payload))
 	if err != nil {
 		return err
 	}
 
-	d.SetId(name)
+	item, err := oc.GetItemType("itemtype", name)
+	if err != nil {
+		return err
+	}
+
+	if item.Id == 0 {
+		return errors.New("ID of 0 found for saved object.")
+	}
+
+	d.SetId(strconv.Itoa(item.Id))
+
 	return nil
 }
 
 func resourceItemTypeRead(d *schema.ResourceData, m interface{}) error {
+	id := d.Get("id")
+
 	name := d.Get("name").(string)
 	resp, err := oc.GetItemType("itemtype", name)
-	if err != nil { return err}
+	if err != nil {
+		return err
+	}
 
+	// ID check
+	if id != nil {
+		idInt, err := strconv.Atoi(id.(string))
+		if err != nil {
+			return err
+		}
+		if idInt != resp.Id {
+			d.SetId("")
+		}
+	}
+
+	// Name check
 	if resp.Name != name {
-		// If we don't find the item type its not saved
 		d.SetId("")
 	}
+
 	return nil
 }
 
 func resourceItemTypeUpdate(d *schema.ResourceData, m interface{}) error {
+	// As its a put, we just wash through create again.
+	name := d.Get("name").(string)
+	description := d.Get("description").(string)
+	payload, err := json.Marshal(OnixItemType{
+		Name:        name,
+		Description: description,
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = oc.Put("itemtype", name, bytes.NewReader(payload))
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func resourceItemTypeDelete(d *schema.ResourceData, m interface{}) error {
-	result , err := oc.Delete("itemtype", d.Get("name").(string))
+	result, err := oc.Delete("itemtype", d.Get("name").(string))
 	if err != nil {
 		return err
 	} else if result.Error {

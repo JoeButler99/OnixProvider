@@ -12,7 +12,6 @@ import (
 
 // CheckOnixError provides error checking functions for OnixClient. This is because it may need handling with respect to the terraform provider.
 func CheckOnixError(err error) {
-
 	if err != nil {
 		fmt.Println("[OnixError] ", err)
 		log.Printf("[OnixError] %s", err)
@@ -25,11 +24,19 @@ type OnixClient struct {
 	//ClientId, Username, Password string
 }
 
-// TODO - OnixClient may want to cache some of the GET requests to improve TF speed.
+// TODO - OnixClient may want to cache some of the GET requests to improve TF speed. (Or implent itemtype lookup by key)
 
 type OnixItemType struct {
+	Id          int    `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
+}
+
+type OnixItem struct {
+	Id          int    `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Itemtype    int    `json:"itemtype"` // TODO - Should this link to the Type above?
 }
 
 type OnixApiResponseItem struct {
@@ -89,14 +96,14 @@ func (o *OnixClient) GetItemType(elementName, key string) (OnixItemType, error) 
 	CheckOnixError(err)
 	defer resp.Body.Close()
 
-
 	onixResponse := new(OnixApiGetResponse)
 	CheckOnixError(json.NewDecoder(resp.Body).Decode(onixResponse))
 
 	for _, item := range onixResponse.Items {
 		if item.Key == key {
 			return OnixItemType{
-				Name: item.Name,
+				Id:          item.Id,
+				Name:        item.Name,
 				Description: item.Description,
 			}, nil
 		}
