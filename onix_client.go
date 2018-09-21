@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -28,15 +29,33 @@ type OnixClient struct {
 
 type OnixItemType struct {
 	Id          int    `json:"id"`
+	Key         string `json:"key"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
+func (oit *OnixItemType) GetJsonBytesReader() *bytes.Reader {
+	jsonBytes, err := json.Marshal(oit)
+	if err != nil {
+		panic(err)
+	}
+	return bytes.NewReader(jsonBytes)
+}
+
 type OnixItem struct {
 	Id          int    `json:"id"`
+	Key         string `json:"key"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Itemtype    int    `json:"itemtype"` // TODO - Should this link to the Type above?
+}
+
+func (oi *OnixItem) GetJsonBytesReader() *bytes.Reader {
+	jsonBytes, err := json.Marshal(oi)
+	if err != nil {
+		panic(err)
+	}
+	return bytes.NewReader(jsonBytes)
 }
 
 type OnixApiResponseItem struct {
@@ -47,10 +66,27 @@ type OnixApiResponseItem struct {
 }
 
 type OnixApiPutDeleteResponse struct {
-	Changed   bool   `json:"changed"`
-	Error     bool   `json:"error"`
-	Message   string `json:"message"`
-	Operation string `json:"operation"`
+	Changed   bool        `json:"changed"`
+	Error     interface{} `json:"error"` // TODO - Tidy up in onix? this is normally shown as bool.
+	Message   string      `json:"message"`
+	Operation string      `json:"operation"`
+}
+
+func (o *OnixApiPutDeleteResponse) HasError() bool {
+	switch v := o.Error.(type) {
+	case bool:
+		return o.Error.(bool)
+	case string:
+		if o.Error.(string) == "" {
+			return false
+		} else {
+			return true
+		}
+	default:
+		fmt.Errorf("Found type %s, thats odd", v)
+		// Default shouldn't happen, but if it did, its an error.
+		return true
+	}
 }
 
 type OnixApiGetResponse struct {
@@ -88,8 +124,9 @@ func (o *OnixClient) Delete(elementName, key string) (*OnixApiPutDeleteResponse,
 	return onixResponse, err
 }
 
-func (o *OnixClient) GetItemType(elementName, key string) (OnixItemType, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s", o.BaseURL, elementName), nil)
+func (o *OnixClient) GetItemType(key string) (OnixItemType, error) {
+	// TODO - this will be better when we can directly ask for the itemtype/key
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/itemtype", o.BaseURL), nil)
 	CheckOnixError(err)
 
 	resp, err := http.DefaultClient.Do(req)
@@ -103,6 +140,7 @@ func (o *OnixClient) GetItemType(elementName, key string) (OnixItemType, error) 
 		if item.Key == key {
 			return OnixItemType{
 				Id:          item.Id,
+				Key:         item.Key,
 				Name:        item.Name,
 				Description: item.Description,
 			}, nil

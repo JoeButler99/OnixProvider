@@ -1,9 +1,8 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
 	"strconv"
 )
@@ -19,6 +18,11 @@ func resourceItemType() *schema.Resource {
 		Delete: resourceItemTypeDelete,
 
 		Schema: map[string]*schema.Schema{
+			"key": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
@@ -33,22 +37,21 @@ func resourceItemType() *schema.Resource {
 }
 
 func resourceItemTypeCreate(d *schema.ResourceData, m interface{}) error {
+	key := d.Get("key").(string)
 	name := d.Get("name").(string)
 	description := d.Get("description").(string)
-	payload, err := json.Marshal(OnixItemType{
+	oit := OnixItemType{
+		Key:         key,
 		Name:        name,
 		Description: description,
-	})
+	}
+
+	_, err := oc.Put("itemtype", key, oit.GetJsonBytesReader())
 	if err != nil {
 		return err
 	}
 
-	_, err = oc.Put("itemtype", name, bytes.NewReader(payload))
-	if err != nil {
-		return err
-	}
-
-	item, err := oc.GetItemType("itemtype", name)
+	item, err := oc.GetItemType(key)
 	if err != nil {
 		return err
 	}
@@ -64,9 +67,9 @@ func resourceItemTypeCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceItemTypeRead(d *schema.ResourceData, m interface{}) error {
 	id := d.Get("id")
+	key := d.Get("key").(string)
 
-	name := d.Get("name").(string)
-	resp, err := oc.GetItemType("itemtype", name)
+	resp, err := oc.GetItemType(key)
 	if err != nil {
 		return err
 	}
@@ -82,10 +85,9 @@ func resourceItemTypeRead(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	// Name check
-	if resp.Name != name {
-		d.SetId("")
-	}
+	d.Set("key", resp.Key)
+	d.Set("name", resp.Name)
+	d.Set("description", resp.Description)
 
 	return nil
 }
@@ -94,15 +96,12 @@ func resourceItemTypeUpdate(d *schema.ResourceData, m interface{}) error {
 	// As its a put, we just wash through create again.
 	name := d.Get("name").(string)
 	description := d.Get("description").(string)
-	payload, err := json.Marshal(OnixItemType{
+	oit := OnixItemType{
 		Name:        name,
 		Description: description,
-	})
-	if err != nil {
-		return err
 	}
 
-	_, err = oc.Put("itemtype", name, bytes.NewReader(payload))
+	_, err := oc.Put("itemtype", name, oit.GetJsonBytesReader())
 	if err != nil {
 		return err
 	}
@@ -114,8 +113,8 @@ func resourceItemTypeDelete(d *schema.ResourceData, m interface{}) error {
 	result, err := oc.Delete("itemtype", d.Get("name").(string))
 	if err != nil {
 		return err
-	} else if result.Error {
-		return errors.New("Onix API Error")
+	} else if result.Error != "" {
+		return errors.New(fmt.Sprintf("Onix API flagged error, %s", result.Message))
 	}
 	return nil
 }

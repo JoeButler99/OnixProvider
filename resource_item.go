@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"github.com/hashicorp/terraform/helper/schema"
 	"strconv"
 )
@@ -18,6 +16,11 @@ func resourceItem() *schema.Resource {
 		Delete: resourceItemDelete,
 
 		Schema: map[string]*schema.Schema{
+			"key": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
@@ -35,6 +38,7 @@ func resourceItem() *schema.Resource {
 }
 
 func resourceItemCreate(d *schema.ResourceData, m interface{}) error {
+	key := d.Get("key").(string)
 	name := d.Get("name").(string)
 	description := d.Get("description").(string)
 	itemtype, err := strconv.Atoi(d.Get("itemtype").(string))
@@ -42,21 +46,18 @@ func resourceItemCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	payload, err := json.Marshal(OnixItem{
+	oi := OnixItem{
+		Key:         key,
 		Name:        name,
 		Description: description,
 		Itemtype:    itemtype,
-	})
+	}
+	_, err = oc.Put("item", name, oi.GetJsonBytesReader())
 	if err != nil {
 		return err
 	}
 
-	_, err = oc.Put("item", name, bytes.NewReader(payload))
-	if err != nil {
-		return err
-	}
-
-	d.SetId(name)
+	//d.SetId(name)
 	return nil
 }
 
