@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/hashicorp/terraform/helper/schema"
-	"strconv"
 )
 
 // TODO - Look at getting the conn from meta (like the AWS provider)
@@ -38,24 +37,24 @@ func resourceItem() *schema.Resource {
 }
 
 func resourceItemCreate(d *schema.ResourceData, m interface{}) error {
-	key := d.Get("key").(string)
-	name := d.Get("name").(string)
-	description := d.Get("description").(string)
-	itemtype, err := strconv.Atoi(d.Get("itemtype").(string))
-	if err != nil {
-		return err
-	}
-
-	oi := OnixItem{
-		Key:         key,
-		Name:        name,
-		Description: description,
-		Itemtype:    itemtype,
-	}
-	_, err = oc.Put("item", name, oi.GetJsonBytesReader())
-	if err != nil {
-		return err
-	}
+	//key := d.Get("key").(string)
+	//name := d.Get("name").(string)
+	//description := d.Get("description").(string)
+	//itemtype, err := strconv.Atoi(d.Get("itemtype").(string))
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//oi := OnixItem{
+	//	Key:         key,
+	//	Name:        name,
+	//	Description: description,
+	//	Type:        itemtype,
+	//}
+	//_, err = oc.Put("item", name, oi.GetJsonBytesReader())
+	//if err != nil {
+	//	return err
+	//}
 
 	//d.SetId(name)
 	return nil

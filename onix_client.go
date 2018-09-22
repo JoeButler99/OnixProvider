@@ -47,7 +47,8 @@ type OnixItem struct {
 	Key         string `json:"key"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
-	Itemtype    int    `json:"itemtype"` // TODO - Should this link to the Type above?
+	Type        string `json:"type"` // TODO - Should this link to the Type above?
+	Status      int    `json:"status"`
 }
 
 func (oi *OnixItem) GetJsonBytesReader() *bytes.Reader {
@@ -58,18 +59,12 @@ func (oi *OnixItem) GetJsonBytesReader() *bytes.Reader {
 	return bytes.NewReader(jsonBytes)
 }
 
-type OnixApiResponseItem struct {
-	Id          int    `json:"id"`
-	Key         string `json:"key"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
 type OnixApiPutDeleteResponse struct {
-	Changed   bool        `json:"changed"`
-	Error     interface{} `json:"error"` // TODO - Tidy up in onix? this is normally shown as bool.
-	Message   string      `json:"message"`
-	Operation string      `json:"operation"`
+	Changed    bool        `json:"changed"`
+	Error      interface{} `json:"error"` // TODO - Tidy up in onix? this is normally shown as bool.
+	Message    string      `json:"message"`
+	Operation  string      `json:"operation"`
+	StatusCode int
 }
 
 func (o *OnixApiPutDeleteResponse) HasError() bool {
@@ -90,7 +85,7 @@ func (o *OnixApiPutDeleteResponse) HasError() bool {
 }
 
 type OnixApiGetResponse struct {
-	Items []OnixApiResponseItem
+	Items []OnixItem
 }
 
 func (o *OnixClient) Put(elementName, key string, payload io.Reader) (*OnixApiPutDeleteResponse, error) {
@@ -119,6 +114,7 @@ func (o *OnixClient) Delete(elementName, key string) (*OnixApiPutDeleteResponse,
 	defer resp.Body.Close()
 
 	onixResponse := new(OnixApiPutDeleteResponse)
+	onixResponse.StatusCode = resp.StatusCode
 	CheckOnixError(json.NewDecoder(resp.Body).Decode(onixResponse))
 
 	return onixResponse, err
@@ -148,4 +144,18 @@ func (o *OnixClient) GetItemType(key string) (OnixItemType, error) {
 	}
 
 	return OnixItemType{}, err
+}
+
+func (o *OnixClient) GetItem(key string) (OnixItem, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/item/%s", o.BaseURL, key), nil)
+	CheckOnixError(err)
+
+	resp, err := http.DefaultClient.Do(req)
+	CheckOnixError(err)
+	defer resp.Body.Close()
+
+	onixResponse := new(OnixItem)
+	CheckOnixError(json.NewDecoder(resp.Body).Decode(onixResponse))
+
+	return *onixResponse, nil
 }
