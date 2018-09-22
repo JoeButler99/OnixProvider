@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
-	"strconv"
 )
 
 // TODO - Look at getting the conn from meta (like the AWS provider)
@@ -56,33 +55,17 @@ func resourceItemTypeCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if item.Id == 0 {
-		return errors.New("ID of 0 found for saved object.")
-	}
-
-	d.SetId(strconv.Itoa(item.Id))
+	d.SetId(item.Key)
 
 	return nil
 }
 
 func resourceItemTypeRead(d *schema.ResourceData, m interface{}) error {
-	id := d.Get("id")
 	key := d.Get("key").(string)
 
 	resp, err := oc.GetItemType(key)
 	if err != nil {
 		return err
-	}
-
-	// ID check
-	if id != nil {
-		idInt, err := strconv.Atoi(id.(string))
-		if err != nil {
-			return err
-		}
-		if idInt != resp.Id {
-			d.SetId("")
-		}
 	}
 
 	d.Set("key", resp.Key)

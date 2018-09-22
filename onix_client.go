@@ -28,7 +28,6 @@ type OnixClient struct {
 // TODO - OnixClient may want to cache some of the GET requests to improve TF speed. (Or implent itemtype lookup by key)
 
 type OnixItemType struct {
-	Id          int    `json:"id"`
 	Key         string `json:"key"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
@@ -43,12 +42,12 @@ func (oit *OnixItemType) GetJsonBytesReader() *bytes.Reader {
 }
 
 type OnixItem struct {
-	Id          int    `json:"id"`
-	Key         string `json:"key"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Type        string `json:"type"` // TODO - Should this link to the Type above?
-	Status      int    `json:"status"`
+	Key         string      `json:"key"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Type        string      `json:"type"` // TODO - Should this link to the Type above?
+	Status      int         `json:"status"`
+	Meta        interface{} `json:"meta"`
 }
 
 func (oi *OnixItem) GetJsonBytesReader() *bytes.Reader {
@@ -135,7 +134,6 @@ func (o *OnixClient) GetItemType(key string) (OnixItemType, error) {
 	for _, item := range onixResponse.Items {
 		if item.Key == key {
 			return OnixItemType{
-				Id:          item.Id,
 				Key:         item.Key,
 				Name:        item.Name,
 				Description: item.Description,
@@ -155,7 +153,13 @@ func (o *OnixClient) GetItem(key string) (OnixItem, error) {
 	defer resp.Body.Close()
 
 	onixResponse := new(OnixItem)
-	CheckOnixError(json.NewDecoder(resp.Body).Decode(onixResponse))
+	json.NewDecoder(resp.Body).Decode(onixResponse)
+	switch {
+	case err == io.EOF:
+		return *onixResponse, nil
+	case err != nil:
+		CheckOnixError(err)
+	}
 
 	return *onixResponse, nil
 }

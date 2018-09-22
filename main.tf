@@ -22,6 +22,10 @@ resource "onix_itemtype" "AWS_Subnet" {
   key         = "AWSSUB2"
   name        = "AWS Subnet"
   description = "AWS Subnet Details"
+  meta = <<JSON
+
+
+JSON
 }
 
 //resource "onix_item" "CTRL_VPC_ID" {
