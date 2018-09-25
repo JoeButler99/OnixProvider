@@ -1,11 +1,10 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
 )
-
-// TODO - Look at getting the conn from meta (like the AWS provider)
-//var oc = OnixClient{ BaseURL: "http://localhost:8080"}
 
 func resourceItem() *schema.Resource {
 	return &schema.Resource{
@@ -29,34 +28,45 @@ func resourceItem() *schema.Resource {
 				Required: true,
 			},
 			"itemtype": &schema.Schema{
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
+			},
+			"meta": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: false,
+				Optional: true,
 			},
 		},
 	}
 }
 
 func resourceItemCreate(d *schema.ResourceData, m interface{}) error {
-	//key := d.Get("key").(string)
-	//name := d.Get("name").(string)
-	//description := d.Get("description").(string)
-	//itemtype, err := strconv.Atoi(d.Get("itemtype").(string))
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//oi := OnixItem{
-	//	Key:         key,
-	//	Name:        name,
-	//	Description: description,
-	//	Type:        itemtype,
-	//}
-	//_, err = oc.Put("item", name, oi.GetJsonBytesReader())
-	//if err != nil {
-	//	return err
-	//}
+	key := d.Get("key").(string)
+	name := d.Get("name").(string)
+	description := d.Get("description").(string)
+	itemtype := d.Get("itemtype").(string)
+	meta := d.Get("meta").(string)
 
-	//d.SetId(name)
+	oi := OnixItem{
+		Key:         key,
+		Name:        name,
+		Description: description,
+		Type:        itemtype,
+		Meta:        meta,
+	}
+
+	_, err := oc.Put("item", key, oi.GetJsonBytesReader())
+	if err != nil {
+		return err
+	}
+
+	item, err := oc.GetItem(key)
+	if err != nil {
+		return err
+	}
+
+	d.SetId(item.Key)
+
 	return nil
 }
 
@@ -77,11 +87,11 @@ func resourceItemUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceItemDelete(d *schema.ResourceData, m interface{}) error {
-	//result , err := oc.Delete("itemtype", d.Get("name").(string))
-	//if err != nil {
-	//	return err
-	//} else if result.Error {
-	//	return errors.New("Onix API Error")
-	//}
+	result, err := oc.Delete("item", d.Get("key").(string))
+	if err != nil {
+		return err
+	} else if result.Error != "" {
+		return errors.New(fmt.Sprintf("Onix API flagged error, %s", result.Message))
+	}
 	return nil
 }

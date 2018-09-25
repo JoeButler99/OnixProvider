@@ -22,16 +22,21 @@ resource "onix_itemtype" "AWS_Subnet" {
   key         = "AWSSUB2"
   name        = "AWS Subnet"
   description = "AWS Subnet Details"
+}
+
+resource "onix_item" "CTRL_VPC_ID" {
+  key         = "CTRLVPCID"
+  name        = "CTRL VPC ID"
+  description = "CTRL VPC ID"
+  itemtype    = "${onix_itemtype.AWS_VPC.key}"
+
   meta = <<JSON
-
-
+{ "I WORK": true }
 JSON
 }
 
-//resource "onix_item" "CTRL_VPC_ID" {
-//  key         = "CTRLVPCID"
-//  name        = "CTRL VPC ID"
-//  description = "CTRL VPC ID"
-//  itemtype    = "${onix_itemtype.AWS_VPC.key}"
-//}
-
+resource "onix_itemtype" "CtrlSSHKey" {
+  key         = "EnvSshKey"
+  name        = "Environment SSH Key"
+  description = "Public Key for SSH used with control VMS"
+}

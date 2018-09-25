@@ -6,9 +6,6 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-// TODO - Look at getting the conn from meta (like the AWS provider)
-var oc = OnixClient{BaseURL: "http://localhost:8080"}
-
 func resourceItemType() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceItemTypeCreate,
@@ -93,7 +90,7 @@ func resourceItemTypeUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceItemTypeDelete(d *schema.ResourceData, m interface{}) error {
-	result, err := oc.Delete("itemtype", d.Get("name").(string))
+	result, err := oc.Delete("itemtype", d.Get("key").(string))
 	if err != nil {
 		return err
 	} else if result.Error != "" {

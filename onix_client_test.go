@@ -220,4 +220,5 @@ func TestOnixClient_ItemWithMeta(t *testing.T) {
 	v := reflect.ValueOf(getItemResp.Meta)
 	ErrorIfTrue(t, v.Kind() != reflect.Map, "Meta was not of type map")
 
+	// TODO - Add the delete bits here (or abstract them into helper functions)
 }
